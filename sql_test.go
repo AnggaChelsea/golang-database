@@ -24,6 +24,25 @@ func TestExecSql(t *testing.T) {
 	}
 	fmt.Println("success insert data")
 }
+
+func TestExecSqlParams(t *testing.T) {
+	db := GetConnection()
+	username := "aga'; #"
+	password := "aga"
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Fatalf("error closin database: %v", err)
+		}
+	}()
+	ctx := context.Background()
+	script := " INSERT INTO users(username, password) VALUES(?, ?)"
+	_, err := db.ExecContext(ctx, script, username, password)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("success new users data")
+}
+
 func TestQuesrSql(t *testing.T) {
 	//jikalau mau select query di rekomendasikan manggil satu satu by fiel
 	db := GetConnection()
@@ -112,11 +131,15 @@ func TestSqlInjection(t *testing.T) {
 	ctx := context.Background()
 
 	username := "admin'; #"
-	password := "salah"
+	password := "admin"
+	//script := "SELECT username from users where username = '" + username + "' and password = '" + password + "' limit 1 "
+	//yang di atas bahasa disana belum handle sql injection
 
-	script := "SELECT username from users where username = '" + username + "' and password = '" + password + "' limit 1 "
+	script := "SELECT username from users where username = ? and password  = ? limit 1 "
+	//jadi untuk menghindari sql injection pake ? untuk select data
+
 	fmt.Println(script)
-	rows, err := db.QueryContext(ctx, script)
+	rows, err := db.QueryContext(ctx, script, username, password)
 	if err != nil {
 		panic(err)
 	}
